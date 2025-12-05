@@ -2,12 +2,15 @@ import argparse
 from math import sqrt, cos, radians
 from os import makedirs, path
 import re
-from time import time
+from time import time, sleep
 from typing import Dict, List
 import xml.etree.ElementTree
 
-import overpy
+import overpass
 import requests
+
+
+RETRY_TIME = 5  # seconds
 
 
 parser = argparse.ArgumentParser(
@@ -129,10 +132,7 @@ if show_parks:
 		'way[natural~"^(sand|beach)$"]',
 	]
 
-api = overpy.Overpass(
-	retry_timeout=10.000,
-	max_retry_count=4,
-)
+api = overpass.API()
 
 # generate an SVG
 print("writing the SVG file...")
@@ -163,29 +163,36 @@ with open(f"maps/{new_filename}.svg", "w") as file:
 		# query it from OpenStreetMap
 		print(f"Loading '{key}' data from OpenStreetMap...")
 		start = time()
-		full_query = f"[bbox:{south},{west},{north},{east}]; ("
+		full_query = f"("
 		for query_component in queries[key]:
-			full_query += query_component + "; "
-		full_query += "); out geom;"
-		data = api.query(full_query)
-		for way in data.ways:
-			way.get_nodes(resolve_missing=True)
+			full_query += f"{query_component}({south},{west},{north},{east});"
+		full_query += ");"
+		data = None
+		while data is None:
+			try:
+				data = api.get(full_query, verbosity="geom")
+			except overpass.errors.ServerLoadError:
+				sleep(RETRY_TIME)
 		end = time()
-		print(f"Loaded {len(data.nodes)} nodes and {len(data.ways)} ways in {end - start:.0f} seconds.")
+		print(f"Loaded {len(data['features'])} features in {end - start:.0f} seconds.")
 
-		if len(data.ways) == 0:
+		if len(data["features"]) == 0:
 			continue
 
 		# convert it to SVG paths
 		print(f"Adding '{key}' data to the SVG...")
 		file.write(f'\t<g class="{key}">\n')
-		for way in data.ways:
+		for way in data["features"]:
+			nodes = way["geometry"]["coordinates"]
+			if type(nodes[0][0]) is float:
+				nodes = [nodes]  # for some reason the node list is sometimes 2D and sometimes 3D so make it 3D always
 			path_string = ""
-			for i, node in enumerate(way.nodes):
-				command = "M" if i == 0 else "L"
-				x = x_scale*(float(node.lon) - west)
-				y = y_scale*(north - float(node.lat))
-				path_string += f"{command}{x:.2f},{y:.2f} "
+			for section in nodes:
+				for i, (longitude, latitude) in enumerate(section):
+					command = "M" if i == 0 else "L"
+					x = x_scale*(longitude - west)
+					y = y_scale*(north - latitude)
+					path_string += f"{command}{x:.2f},{y:.2f} "
 			file.write(f'\t\t<path d="{path_string}" />\n')
 		file.write(f'\t</g>\n')
 		print("Done.")
