@@ -81,19 +81,19 @@ if args.major_streets == "yes":
 elif args.major_streets == "no":
 	show_major_streets = False
 else:
-	show_major_streets = x_scale > 200
+	show_major_streets = x_scale > 500
 if args.minor_streets == "yes":
 	show_minor_streets = True
 elif args.minor_streets == "no":
 	show_minor_streets = False
 else:
-	show_minor_streets = x_scale > 500
+	show_minor_streets = x_scale > 1000
 if args.railroads == "yes":
 	show_railroads = True
 elif args.railroads == "no":
 	show_railroads = False
 else:
-	show_railroads = x_scale > 1000
+	show_railroads = x_scale > 2000
 if args.parks == "yes":
 	show_parks = True
 elif args.parks == "no":
@@ -104,7 +104,7 @@ else:
 # load relevant data for the relevant region from OpenStreetMap's Overpass API
 queries = {
 	"water": [
-		'way[natural~"^(water|coastline)$"]',
+		'nwr[natural~"^(water|coastline)$"]',
 	],
 	"highway": [
 		'way[highway~"^(motorway|trunk)$"]',
@@ -112,7 +112,7 @@ queries = {
 }
 if show_major_streets:
 	queries["major_street"] = [
-		'way[highway~"^(primary|secondary|pedestrian)$"]',
+		'way[highway~"^(primary|secondary)$"]',
 	]
 if show_minor_streets:
 	queries["minor_street"] = [
@@ -124,12 +124,12 @@ if show_railroads:
 	]
 if show_parks:
 	queries["green"] = [
-		'way[leisure~"^(park|dog_park_pitch_stadium|golf_course|garden)$"]',
-		'way[natural~"^(grassland|heath|scrub|tundra|wood|wetland)$"]',
-		'way[landuse~"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"]',
+		'nwr[leisure~"^(park|dog_park_pitch_stadium|golf_course|garden)$"]',
+		'nwr[natural~"^(grassland|heath|scrub|tundra|wood|wetland)$"]',
+		'nwr[landuse~"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"]',
 	]
 	queries["sand"] = [
-		'way[natural~"^(sand|beach)$"]',
+		'nwr[natural~"^(sand|beach)$"]',
 	]
 
 api = overpass.API()
@@ -149,9 +149,9 @@ with open(f"maps/{new_filename}.svg", "w") as file:
 		f'\t\t.water {{ fill: #b1deff; stroke: none }}\n'
 		f'\t\t.green {{ fill: #d5f5da; stroke: none }}\n'
 		f'\t\t.sand {{ fill: #fde8c6; stroke: none }}\n'
-		f'\t\t.major_street, .minor_street {{ fill: none; stroke: #c7b9c2; stroke-width: 0.35; stroke-linejoin: round }}\n'
-		f'\t\t.highway {{ fill: none; stroke: #b79bad; stroke-width: 0.70; stroke-linejoin: round }}\n'
-		f'\t\t.railroad {{ fill: none; stroke: #93898f; stroke-width: 0.35; stroke-linejoin: round }}\n'
+		f'\t\t.major_street, .minor_street {{ fill: none; stroke: #c7b9c2; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round }}\n'
+		f'\t\t.highway {{ fill: none; stroke: #b79bad; stroke-width: 0.70; stroke-linejoin: round; stroke-linecap: round }}\n'
+		f'\t\t.railroad {{ fill: none; stroke: #93898f; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round }}\n'
 		f'\t</style>\n'
 	)
 
@@ -184,6 +184,8 @@ with open(f"maps/{new_filename}.svg", "w") as file:
 		file.write(f'\t<g class="{key}">\n')
 		for way in data["features"]:
 			nodes = way["geometry"]["coordinates"]
+			if type(nodes[0]) is float:
+				continue  # sometimes we get points and that's fine, just ignore them
 			if type(nodes[0][0]) is float:
 				nodes = [nodes]  # for some reason the node list is sometimes 2D and sometimes 3D so make it 3D always
 			path_string = ""
