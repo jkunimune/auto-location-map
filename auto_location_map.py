@@ -4,9 +4,7 @@ from os import makedirs, path
 import re
 from time import time, sleep
 from typing import Dict, List
-import xml.etree.ElementTree
 
-import overpass
 import requests
 
 
@@ -102,37 +100,47 @@ else:
 	show_parks = True
 
 # load relevant data for the relevant region from OpenStreetMap's Overpass API
-queries = {
+shape_types = {
 	"water": [
-		'nwr[natural~"^(water|coastline)$"]',
+		("nwr", "natural", r"^(water|coastline)$"),
 	],
 	"highway": [
-		'way[highway~"^(motorway|trunk)$"]',
+		("way", "highway", r"^(motorway|trunk)$"),
 	],
 }
 if show_major_streets:
-	queries["major_street"] = [
-		'way[highway~"^(primary|secondary)$"]',
+	shape_types["major_street"] = [
+		("way", "highway", r"^(primary|secondary)$"),
 	]
 if show_minor_streets:
-	queries["minor_street"] = [
-		'way[highway~"^(tertiary|residential|living_street|busway)$"]',
+	shape_types["minor_street"] = [
+		("way", "highway", r"^(tertiary|residential|living_street|busway)$"),
 	]
 if show_railroads:
-	queries["railroad"] = [
-		'way[railway="rail"]',
+	shape_types["railroad"] = [
+		("way", "railway", r"^rail$"),
 	]
 if show_parks:
-	queries["green"] = [
-		'nwr[leisure~"^(park|dog_park_pitch_stadium|golf_course|garden)$"]',
-		'nwr[natural~"^(grassland|heath|scrub|tundra|wood|wetland)$"]',
-		'nwr[landuse~"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"]',
+	shape_types["green"] = [
+		("nwr", "leisure", r"^(park|dog_park_pitch_stadium|golf_course|garden)$"),
+		("nwr", "natural", r"^(grassland|heath|scrub|tundra|wood|wetland)$"),
+		("nwr", "landuse", r"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"),
 	]
-	queries["sand"] = [
-		'nwr[natural~"^(sand|beach)$"]',
+	shape_types["sand"] = [
+		("nwr", "natural", r"(sand|beach)"),
 	]
 
-api = overpass.API()
+full_query = f"[out:json][bbox:{south},{west},{north},{east}]; ( "
+for query_set in shape_types.values():
+	for kind, key, values in query_set:
+		full_query += f'{kind}[{key}~"{values}"]; '
+full_query += f"); out geom;"
+print(f"Loading data from OpenStreetMap...")
+start = time()
+response = requests.post("https://overpass-api.de/api/interpreter", data={"data": full_query})
+end = time()
+data = response.json()
+print(f"Loaded {len(data['elements'])} shapes in {end - start:.0f} seconds.")
 
 # generate an SVG
 print("writing the SVG file...")
@@ -156,47 +164,38 @@ with open(f"maps/{new_filename}.svg", "w") as file:
 	)
 
 	# for each type of data
-	for key in ["water", "green", "sand", "minor_street", "major_street", "highway", "railroad"]:
-		if key not in queries:
+	for shape_type in ["water", "green", "sand", "minor_street", "major_street", "highway", "railroad"]:
+		if shape_type not in shape_types:
 			continue
 
-		# query it from OpenStreetMap
-		print(f"Loading '{key}' data from OpenStreetMap...")
-		start = time()
-		full_query = f"("
-		for query_component in queries[key]:
-			full_query += f"{query_component}({south},{west},{north},{east});"
-		full_query += ");"
-		data = None
-		while data is None:
-			try:
-				data = api.get(full_query, verbosity="geom")
-			except overpass.errors.ServerLoadError:
-				sleep(RETRY_TIME)
-		end = time()
-		print(f"Loaded {len(data['features'])} features in {end - start:.0f} seconds.")
-
-		if len(data["features"]) == 0:
+		# pull out the shapes that belong to that particular type
+		shapes = []
+		for shape in data["elements"]:
+			if shape["type"] != "node":
+				for kind, key, values in shape_types[shape_type]:
+					if key in shape["tags"]:
+						if re.match(values, shape["tags"][key]) is not None:
+							shapes.append(shape)
+		if len(shapes) == 0:
 			continue
 
 		# convert it to SVG paths
-		print(f"Adding '{key}' data to the SVG...")
-		file.write(f'\t<g class="{key}">\n')
-		for way in data["features"]:
-			nodes = way["geometry"]["coordinates"]
-			if type(nodes[0]) is float:
-				continue  # sometimes we get points and that's fine, just ignore them
-			if type(nodes[0][0]) is float:
-				nodes = [nodes]  # for some reason the node list is sometimes 2D and sometimes 3D so make it 3D always
+		file.write(f'\t<g class="{shape_type}">\n')
+		for shape in shapes:
+			if shape["type"] == "way":
+				points = [shape["geometry"]]
+			elif shape["type"] == "relation":
+				points = [member["geometry"] for member in shape["members"]]
+			else:
+				raise TypeError(shape["type"])
 			path_string = ""
-			for section in nodes:
-				for i, (longitude, latitude) in enumerate(section):
+			for section in points:
+				for i, point in enumerate(section):
 					command = "M" if i == 0 else "L"
-					x = x_scale*(longitude - west)
-					y = y_scale*(north - latitude)
+					x = x_scale*(point["lon"] - west)
+					y = y_scale*(north - point["lat"])
 					path_string += f"{command}{x:.2f},{y:.2f} "
 			file.write(f'\t\t<path d="{path_string}" />\n')
 		file.write(f'\t</g>\n')
-		print("Done.")
 	file.write("</svg>\n")
 print(f"Saved the map to `maps/{new_filename}.svg`!")
