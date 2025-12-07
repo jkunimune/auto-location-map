@@ -64,14 +64,14 @@ else:
 
 # decide on an appropriate scale
 x_scale = 1
-y_scale = 1/cos(radians((south + north)/2))
-initial_area = x_scale*(east - west)*y_scale*(north - south)
-desired_area = 2000  # mm²
+y_scale = -1/cos(radians((south + north)/2))
+initial_area = x_scale*(east - west)*y_scale*(south - north)
+desired_area = 10000  # mm²
 scale_correction = sqrt(desired_area/initial_area)
 x_scale *= scale_correction
 y_scale *= scale_correction
 width = x_scale*(east - west)
-height = y_scale*(north - south)
+height = y_scale*(south - north)
 
 # decide which elements to show
 if args.major_streets == "yes":
@@ -79,19 +79,19 @@ if args.major_streets == "yes":
 elif args.major_streets == "no":
 	show_major_streets = False
 else:
-	show_major_streets = x_scale > 500
+	show_major_streets = x_scale > 1000
 if args.minor_streets == "yes":
 	show_minor_streets = True
 elif args.minor_streets == "no":
 	show_minor_streets = False
 else:
-	show_minor_streets = x_scale > 1000
+	show_minor_streets = x_scale > 2000
 if args.railroads == "yes":
 	show_railroads = True
 elif args.railroads == "no":
 	show_railroads = False
 else:
-	show_railroads = x_scale > 2000
+	show_railroads = x_scale > 5000
 if args.parks == "yes":
 	show_parks = True
 elif args.parks == "no":
@@ -122,7 +122,7 @@ if show_railroads:
 	]
 if show_parks:
 	shape_types["green"] = [
-		("nwr", "leisure", r"^(park|dog_park_pitch_stadium|golf_course|garden)$"),
+		("nwr", "leisure", r"^(park|dog_park|pitch|stadium|golf_course|garden)$"),
 		("nwr", "natural", r"^(grassland|heath|scrub|tundra|wood|wetland)$"),
 		("nwr", "landuse", r"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"),
 	]
@@ -154,12 +154,12 @@ with open(f"maps/{new_filename}.svg", "w") as file:
 		f'\t<desc>A location map of the region with latitudes between {south} and {north}, and longitudes between {west} and {east}.  Equirectangular projection.  The data for this map is made available by the OpenStreetMap contributors, under the Open Database License: http://opendatacommons.org/licenses/odbl/1.0/</desc>\n'
 		f'\t<style>\n'
 		f'\t\t.background {{ fill: #ffffff; stroke: none }}\n'
-		f'\t\t.water {{ fill: #b1deff; stroke: none }}\n'
-		f'\t\t.green {{ fill: #d5f5da; stroke: none }}\n'
-		f'\t\t.sand {{ fill: #fde8c6; stroke: none }}\n'
-		f'\t\t.major_street, .minor_street {{ fill: none; stroke: #c7b9c2; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round }}\n'
-		f'\t\t.highway {{ fill: none; stroke: #b79bad; stroke-width: 0.70; stroke-linejoin: round; stroke-linecap: round }}\n'
-		f'\t\t.railroad {{ fill: none; stroke: #93898f; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round }}\n'
+		f'\t\t.water {{ fill: #b1deff; fill-rule: evenodd; stroke: none }}\n'
+		f'\t\t.green {{ fill: #d5f5da; fill-rule: evenodd; stroke: none }}\n'
+		f'\t\t.sand {{ fill: #fde8c6; fill-rule: evenodd; stroke: none }}\n'
+		f'\t\t.major_street, .minor_street {{ fill: none; stroke: #c7b9c2; stroke-width: 0.53; stroke-linejoin: round; stroke-linecap: round }}\n'
+		f'\t\t.highway {{ fill: none; stroke: #b79bad; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round }}\n'
+		f'\t\t.railroad {{ fill: none; stroke: #93898f; stroke-width: 0.53; stroke-linejoin: round; stroke-linecap: round }}\n'
 		f'\t</style>\n'
 	)
 
@@ -193,7 +193,7 @@ with open(f"maps/{new_filename}.svg", "w") as file:
 				for i, point in enumerate(section):
 					command = "M" if i == 0 else "L"
 					x = x_scale*(point["lon"] - west)
-					y = y_scale*(north - point["lat"])
+					y = y_scale*(point["lat"] - north)
 					path_string += f"{command}{x:.2f},{y:.2f} "
 			file.write(f'\t\t<path d="{path_string}" />\n')
 		file.write(f'\t</g>\n')
