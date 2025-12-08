@@ -148,6 +148,9 @@ def choose_queries(major_streets, minor_streets, railroads, parks, x_scale):
 		shape_types["sand"] = [
 			("nwr", "natural", r"(sand|beach)"),
 		]
+		shape_types["airport"] = [
+			("nwr", "aeroway", r"^(aerodrome|heliport|launch_complex)$")
+		]
 
 	return shape_types
 
@@ -186,6 +189,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 			f'\t\t.water {{ fill: #b1deff; fill-rule: evenodd; stroke: none }}\n'
 			f'\t\t.green {{ fill: #d5f5da; fill-rule: evenodd; stroke: none }}\n'
 			f'\t\t.sand {{ fill: #fde8c6; fill-rule: evenodd; stroke: none }}\n'
+			f'\t\t.airport {{ fill: #f0e9ed; fill-rule: evenodd; stroke: none }}\n'
 			f'\t\t.major_street, .minor_street {{ fill: none; stroke: #c7b9c2; stroke-width: 0.53; stroke-linejoin: round; stroke-linecap: round }}\n'
 			f'\t\t.highway {{ fill: none; stroke: #b79bad; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round }}\n'
 			f'\t\t.railroad {{ fill: none; stroke: #93898f; stroke-width: 0.53; stroke-linejoin: round; stroke-linecap: round }}\n'
@@ -193,7 +197,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 		)
 
 		# for each type of data, in order
-		for shape_type in ["water", "green", "sand", "minor_street", "major_street", "highway", "railroad"]:
+		for shape_type in ["water", "green", "sand", "airport", "minor_street", "major_street", "highway", "railroad"]:
 			if shape_type not in shape_types:
 				continue
 
