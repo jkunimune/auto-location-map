@@ -129,11 +129,11 @@ def choose_queries(major_streets, minor_streets, railroads, parks, x_scale):
 	}
 	if show_major_streets:
 		shape_types["major_street"] = [
-			("way", "highway", r"^(primary|secondary)$"),
+			("way", "highway", r"^((primary|secondary)(_link)?|(motorway|trunk)_link)$"),
 		]
 	if show_minor_streets:
 		shape_types["minor_street"] = [
-			("way", "highway", r"^(tertiary|residential|living_street|busway)$"),
+			("way", "highway", r"^(tertiary|residential|living_street|busway)(_link)?$"),
 		]
 	if show_railroads:
 		shape_types["railroad"] = [
