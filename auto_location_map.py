@@ -50,32 +50,60 @@ def choose_bounds(area_specifier):
 	if parsing is not None:
 		# those numbers are the bounding box
 		west, south, east, north = (float(group) for group in parsing.groups())
+		bbox = BoundingBox(west, south, east, north)
 		# make up a filename
 		new_filename = f"Location map ({(south + north)/2:.1f},{(west + east)/2:.1f})"
 	# if the area specifier is a filename
 	else:
-		# load that page from the Wikimedia Commons
-		filename = area_specifier.replace("File:", "")
-		print("Reading the existing location map page...")
-		commons_page = requests.get(
-			f"http://commons.wikimedia.org/wiki/File:{filename.replace(' ', '_')}",
-			headers={"User-Agent": "User:Justinkunimune's automatic location map replacement script"}
-		)
-		print(commons_page.text)
-		if "No file by this name exists" in commons_page:
-			raise IOError(f"I can't find a file on the Commons by the name {filename!r}.")
-		# extract the bounding box from that page
-		bounds = []
-		for direction in ["W", "E", "S", "N"]:
-			sentence = re.search(rf"{direction}: ([-+0-9.e]+)°", commons_page.text)
-			if sentence is None:
-				raise ValueError(f"I can't find the bounding box info for {filename!r} on its page.  Are you sure it's a location map?")
-			bounds.append(float(sentence.group(1)))
-		west, south, east, north = bounds
-		print(f"The bounding box is {west}/{south}/{east}/{north}")
+		# load that page from the Wikimedia Commons or from Wikipedia' Module space
+		try:
+			print("Reading the existing location map page...")
+			filename = area_specifier.replace("File:", "")
+			if path.splitext(filename)[1] == "":
+				filename += ".png"
+			bbox = choose_bounds_from_wobpage(f"http://commons.wikimedia.org/wiki/File:{filename.replace(' ', '_')}")
+		except Exception as error:
+			print(error)
+			try:
+				print("Reading the existing module data page...")
+				filename = area_specifier.replace("Module:", "").replace("Location map/data/", "")
+				bbox = choose_bounds_from_wobpage(f"http://en.wikipedia.org/wiki/Module:Location map/data/{filename.replace(' ', '_')}")
+			except Exception as error:
+				print(error)
+				raise ValueError("I couldn't find any bounding box information anywhere.")
+		print(f"The bounding box is {bbox.west}/{bbox.south}/{bbox.east}/{bbox.north}")
 		# append "2" to the filename and remove the extension
 		new_filename = path.splitext(filename)[0] + " 2"
-	return BoundingBox(west, south, east, north), new_filename
+	return bbox, new_filename
+
+
+def choose_bounds_from_wobpage(address):
+	# load the page
+	page = requests.get(address, headers={
+		"User-Agent": "User:Justinkunimune's automatic location map replacement script"
+	})
+	if page.status_code != 200:
+		raise FileNotFoundError(f"The page `{address}` doesn't seem to exist.")
+	if "No file by this name exists" in page or "does not have a Module page with this exact name" in page:
+		raise FileNotFoundError(f"There doesn't seem to be anything at `{address}`.")
+	# extract the bounding box from the page's content
+	bounds = []
+	for direction in [["W", "left"], ["S", "bottom"], ["E", "right"], ["N", "top"]]:
+		bound = None
+		for name in direction:
+			sentence = re.search(rf"\b{name}\b[a-z</> ]*[:=] ([-+0-9.e]+)(°[NSEW])?", page.text)
+			if sentence is not None:
+				bound = float(sentence.group(1))
+				units = sentence.group(2)
+				if units is not None and (units == "°S" or units == "°W"):
+					bound *= -1
+				break
+		if bound is None:
+			raise ValueError(f"I can't find the {'/'.join(direction)} info on `{address}`.")
+		else:
+			bounds.append(bound)
+	west, south, east, north = bounds
+	return BoundingBox(west, south, east, north)
 
 
 def choose_scale(bbox):
