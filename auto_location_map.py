@@ -214,7 +214,12 @@ def load_data(bbox, shape_types):
 	return data
 
 
-def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
+def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, style, data):
+	sources = {"the OpenStreetMap contributors"}
+	for shape in data["elements"]:
+		if "attribution" in shape["tags"]:
+			sources.add(shape["tags"]["attribution"])
+	attribution = " and ".join(sorted(sources))
 	# generate an SVG
 	print("writing the SVG file...")
 	width = x_scale*(bbox.east - bbox.west)
@@ -224,9 +229,9 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 		# write the header
 		file.write(
 			f'<?xml version="1.0" encoding="UTF-8"?>\n'
-			f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}mm" height="{height}mm" viewBox="0 0 {width} {height}">\n'
+			f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.2f}mm" height="{height:.2f}mm" viewBox="0 0 {width:.2f} {height:.2f}">\n'
 			f'\t<title>{new_filename}</title>\n'
-			f'\t<desc>A location map of the region with latitudes between {bbox.south} and {bbox.north}, and longitudes between {bbox.west} and {bbox.east}.  Equirectangular projection.  The data for this map is made available by the OpenStreetMap contributors, under the Open Database License: http://opendatacommons.org/licenses/odbl/1.0/</desc>\n'
+			f'\t<desc>A location map of the region with latitudes between {bbox.south} and {bbox.north}, and longitudes between {bbox.west} and {bbox.east}.  Equirectangular projection, scale 1 : {111111/y_scale:,.0f}.  The data for this map comes from {attribution}, and is made available by OpenStreetMap under the Open Database License: http://opendatacommons.org/licenses/odbl/1.0/</desc>\n'
 			f'\t<style>\n'
 			f'\t\t.background {{ fill: #ffffff; stroke: none }}\n'
 			f'\t\t.sea {{ fill: #b1deff; fill-rule: evenodd; stroke: none }}\n'
