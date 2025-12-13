@@ -9,7 +9,18 @@ from typing import Dict, List
 import requests
 
 
-RETRY_TIME = 5  # seconds
+STYLES = {
+	"background": "fill: #ffffff; stroke: none",
+	"sea": "fill: #b1deff; fill-rule: evenodd; stroke: none",
+	"lake": "fill: #b1deff; fill-rule: evenodd; stroke: none",
+	"green": "fill: #d5f5da; fill-rule: evenodd; stroke: none",
+	"sand": "fill: #fde8c6; fill-rule: evenodd; stroke: none",
+	"airport": "fill: #f0e9ed; fill-rule: evenodd; stroke: none",
+	"minor_street": "fill: none; stroke: #c7b9c2; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
+	"major_street": "fill: none; stroke: #c7b9c2; stroke-width: 0.71; stroke-linejoin: round; stroke-linecap: round",
+	"highway": "fill: none; stroke: #b79bad; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round",
+	"railroad": "fill: none; stroke: #93898f; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
+}
 
 
 def main():
@@ -214,12 +225,27 @@ def load_data(bbox, shape_types):
 	return data
 
 
-def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, style, data):
+def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
+	# compose the description
 	sources = {"the OpenStreetMap contributors"}
 	for shape in data["elements"]:
 		if "attribution" in shape["tags"]:
 			sources.add(shape["tags"]["attribution"])
 	attribution = " and ".join(sorted(sources))
+	description = (
+		f"A location map of the region with latitudes between {bbox.south} and {bbox.north},"
+		f"and longitudes between {bbox.west} and {bbox.east}.  "
+		f"Equirectangular projection, scale 1 : {111111/y_scale:,.0f}.  "
+		f"The data for this map comes from {attribution}, and is made available by OpenStreetMap "
+		f"under the Open Database License: http://opendatacommons.org/licenses/odbl/1.0/")
+
+	# compose the stylesheet
+	stylesheet = f"\t\t.background {{ {STYLES['background']} }}\n"
+	for shape_type in shape_types:
+		stylesheet += f"\t\t.{shape_type} {{ {STYLES[shape_type]} }}\n"
+	if "stroke-width: 0.71" not in stylesheet:  # make the highways thinner if possible
+		stylesheet = stylesheet.replace("1.06", "0.71")
+
 	# generate an SVG
 	print("writing the SVG file...")
 	width = x_scale*(bbox.east - bbox.west)
@@ -231,18 +257,8 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, style, data):
 			f'<?xml version="1.0" encoding="UTF-8"?>\n'
 			f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.2f}mm" height="{height:.2f}mm" viewBox="0 0 {width:.2f} {height:.2f}">\n'
 			f'\t<title>{new_filename}</title>\n'
-			f'\t<desc>A location map of the region with latitudes between {bbox.south} and {bbox.north}, and longitudes between {bbox.west} and {bbox.east}.  Equirectangular projection, scale 1 : {111111/y_scale:,.0f}.  The data for this map comes from {attribution}, and is made available by OpenStreetMap under the Open Database License: http://opendatacommons.org/licenses/odbl/1.0/</desc>\n'
-			f'\t<style>\n'
-			f'\t\t.background {{ fill: #ffffff; stroke: none }}\n'
-			f'\t\t.sea {{ fill: #b1deff; fill-rule: evenodd; stroke: none }}\n'
-			f'\t\t.lake {{ fill: #b1deff; fill-rule: evenodd; stroke: none }}\n'
-			f'\t\t.green {{ fill: #d5f5da; fill-rule: evenodd; stroke: none }}\n'
-			f'\t\t.sand {{ fill: #fde8c6; fill-rule: evenodd; stroke: none }}\n'
-			f'\t\t.airport {{ fill: #f0e9ed; fill-rule: evenodd; stroke: none }}\n'
-			f'\t\t.major_street, .minor_street {{ fill: none; stroke: #c7b9c2; stroke-width: 0.53; stroke-linejoin: round; stroke-linecap: round }}\n'
-			f'\t\t.highway {{ fill: none; stroke: #b79bad; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round }}\n'
-			f'\t\t.railroad {{ fill: none; stroke: #93898f; stroke-width: 0.53; stroke-linejoin: round; stroke-linecap: round }}\n'
-			f'\t</style>\n'
+			f'\t<desc>{description}</desc>\n'
+			f'\t<style>\n{stylesheet}\t</style>\n'
 			f'\t<rect class="background" x="0" y="0" width="100%" height="100%" />\n'
 		)
 
