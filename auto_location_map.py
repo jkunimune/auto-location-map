@@ -37,7 +37,7 @@ def main():
 	x_scale, y_scale = choose_scale(bbox)
 
 	shape_types = choose_queries(
-		args.major_streets, args.minor_streets, args.railroads, args.parks, x_scale)
+		args.major_streets, args.minor_streets, args.railroads, args.parks, y_scale)
 
 	data = load_data(bbox, shape_types)
 
@@ -129,32 +129,32 @@ def choose_scale(bbox):
 	return x_scale, y_scale
 
 
-def choose_queries(major_streets, minor_streets, railroads, parks, x_scale):
+def choose_queries(major_streets, minor_streets, railroads, parks, y_scale):
 	# decide which elements to show
-	if major_streets == "yes":
-		show_major_streets = True
-	elif major_streets == "no":
-		show_major_streets = False
-	else:
-		show_major_streets = x_scale > 1000
-	if minor_streets == "yes":
-		show_minor_streets = True
-	elif minor_streets == "no":
-		show_minor_streets = False
-	else:
-		show_minor_streets = x_scale > 2000
-	if railroads == "yes":
-		show_railroads = True
-	elif railroads == "no":
-		show_railroads = False
-	else:
-		show_railroads = x_scale > 5000
 	if parks == "yes":
 		show_parks = True
 	elif parks == "no":
 		show_parks = False
 	else:
-		show_parks = True
+		show_parks = abs(y_scale) > 500
+	if major_streets == "yes":
+		show_major_streets = True
+	elif major_streets == "no":
+		show_major_streets = False
+	else:
+		show_major_streets = abs(y_scale) > 1000
+	if minor_streets == "yes":
+		show_minor_streets = True
+	elif minor_streets == "no":
+		show_minor_streets = False
+	else:
+		show_minor_streets = abs(y_scale) > 2000
+	if railroads == "yes":
+		show_railroads = True
+	elif railroads == "no":
+		show_railroads = False
+	else:
+		show_railroads = abs(y_scale) > 5000
 
 	# put together the tags that define the relevant data
 	shape_types = {
@@ -189,9 +189,9 @@ def choose_queries(major_streets, minor_streets, railroads, parks, x_scale):
 		shape_types["sand"] = [
 			("nwr", "natural", r"(sand|beach)"),
 		]
-		shape_types["airport"] = [
-			("nwr", "aeroway", r"^(aerodrome|heliport|launch_complex)$")
-		]
+	shape_types["airport"] = [
+		("nwr", "aeroway", r"^(aerodrome|heliport|launch_complex)$")
+	]
 
 	return shape_types
 
