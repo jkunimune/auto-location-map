@@ -345,8 +345,12 @@ def consolidate_all_polygons(paths, bbox):
 		[{"lat": bbox.south, "lon": bbox.east}],
 		[{"lat": bbox.south, "lon": bbox.west}],
 	] + megapath
-	# then, pull off arbitrary open segments and try to complete them
+	# pull out any segments that are already closed
 	closed_segments = []
+	for i in range(len(open_segments) - 1, 3, -1):
+		if open_segments[i][0] == open_segments[i][-1]:
+			closed_segments.append(open_segments.pop(i))
+	# then, pull off arbitrary open segments and try to complete them
 	while len(open_segments) > 0:
 		new_closed_segment = open_segments[-1]
 		while True:
