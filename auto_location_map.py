@@ -221,6 +221,8 @@ def load_data(bbox, shape_types):
 	for query_set in shape_types.values():
 		for kind, key, values in query_set:
 			full_query += f'{kind}[{key}~"{values}"]; '
+			if key in ["highway", "railway", "landuse"]:  # don't forget to also query roads under construction
+				full_query += f'{kind}[{key}="construction"][construction~"{values}"]; '
 	full_query += f"); out geom;"
 	print(f"Loading data from OpenStreetMap...")
 	start = time()
@@ -287,6 +289,9 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 						if key in shape["tags"]:
 							if re.match(values, shape["tags"][key]) is not None:
 								shapes.append(shape)
+							elif shape["tags"][key] == "construction":  # don't forget to also get the under construction features
+								if re.match(values, shape["tags"]["construction"]) is not None:
+									shapes.append(shape)
 			if len(shapes) == 0:
 				continue
 
