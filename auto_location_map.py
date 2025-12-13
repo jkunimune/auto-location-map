@@ -18,8 +18,8 @@ STYLES = {
 	"airport": "fill: #f0e9ed; fill-rule: evenodd; stroke: none",
 	"minor_street": "fill: none; stroke: #c7b9c2; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
 	"major_street": "fill: none; stroke: #c7b9c2; stroke-width: 0.71; stroke-linejoin: round; stroke-linecap: round",
-	"highway": "fill: none; stroke: #b79bad; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round",
-	"railroad": "fill: none; stroke: #93898f; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
+	"highway": "fill: none; stroke: #c3a8b9; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round",
+	"railroad": "fill: none; stroke: #a39ca0; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
 }
 
 
@@ -30,11 +30,8 @@ def main():
 		"area_specifier", type=str,
 		help="Either the desired coordinate bounds of the map in the format '{south}/{north}/{west}/{east}' (e.g. 40.69/40.84/-74.03/-73.93), or the name of an existing location map on the Wikimedia Commons (in which case we will use the same bounds as the existing map)")
 	parser.add_argument(
-		"--major_streets", choices=["yes", "no", "auto"], default="auto",
-		help="Whether to include major streets on the map")
-	parser.add_argument(
-		"--minor_streets", choices=["yes", "no", "auto"], default="auto",
-		help="Whether to include residential streets on the map")
+		"--street_detail", choices=["0", "1", "2", "3", "4", "5", "6", "auto"], default="auto",
+		help="How many layers of street detail: 2 for only highways, 4 for major streets but not residential streets, 6 for all streets, etc.")
 	parser.add_argument(
 		"--railroads", choices=["yes", "no", "auto"], default="auto",
 		help="Whether to include passenger railways on the map")
@@ -48,7 +45,7 @@ def main():
 	x_scale, y_scale = choose_scale(bbox)
 
 	shape_types = choose_queries(
-		args.major_streets, args.minor_streets, args.railroads, args.parks, y_scale)
+		args.street_detail, args.railroads, args.parks, y_scale)
 
 	data = load_data(bbox, shape_types)
 
@@ -138,32 +135,32 @@ def choose_scale(bbox):
 	return x_scale, y_scale
 
 
-def choose_queries(major_streets, minor_streets, railroads, parks, y_scale):
+def choose_queries(street_detail, railroads, parks, y_scale):
 	# decide which elements to show
-	if parks == "yes":
-		show_parks = True
-	elif parks == "no":
-		show_parks = False
-	else:
-		show_parks = abs(y_scale) > 500
-	if major_streets == "yes":
-		show_major_streets = True
-	elif major_streets == "no":
-		show_major_streets = False
-	else:
-		show_major_streets = abs(y_scale) > 1000
-	if minor_streets == "yes":
-		show_minor_streets = True
-	elif minor_streets == "no":
-		show_minor_streets = False
-	else:
-		show_minor_streets = abs(y_scale) > 2000
-	if railroads == "yes":
-		show_railroads = True
-	elif railroads == "no":
-		show_railroads = False
-	else:
+	if railroads == "auto":
 		show_railroads = abs(y_scale) > 5000
+	else:
+		show_railroads = railroads == "yes"
+	if parks == "auto":
+		show_parks = abs(y_scale) > 500
+	else:
+		show_parks = parks == "yes"
+	if street_detail == "auto":
+		if abs(y_scale) > 5000:
+			num_street_layers = 6  # all streets
+		elif abs(y_scale) > 2000:
+			num_street_layers = 5  # all but residential streets
+		elif abs(y_scale) > 1000:
+			num_street_layers = 4  # primary and secondary streets
+		elif abs(y_scale) > 500:
+			num_street_layers = 3  # primary streets
+		elif abs(y_scale) > 200:
+			num_street_layers = 2  # only highways
+		else:
+			num_street_layers = 1  # only motorways
+		print(f"Setting the street detail to {num_street_layers}.")
+	else:
+		num_street_layers = int(street_detail)
 
 	# put together the tags that define the relevant data
 	shape_types = {
@@ -173,17 +170,30 @@ def choose_queries(major_streets, minor_streets, railroads, parks, y_scale):
 		"lake": [
 			("nwr", "natural", r"^water$"),
 		],
-		"highway": [
-			("way", "highway", r"^(motorway|trunk)$"),
-		],
 	}
-	if show_major_streets:
-		shape_types["major_street"] = [
-			("way", "highway", r"^((primary|secondary)(_link)?|(motorway|trunk)_link)$"),
+	if num_street_layers >= 1:
+		shape_types["highway"] = [
+			("way", "highway", r"^motorway$"),
 		]
-	if show_minor_streets:
+	if num_street_layers >= 2:
+		shape_types["highway"] += [
+			("way", "highway", r"^trunk$"),
+		]
+	if num_street_layers >= 3:
+		shape_types["major_street"] = [
+			("way", "highway", r"^(primary|(motorway|trunk)_link)$"),
+		]
+	if num_street_layers >= 4:
+		shape_types["major_street"] += [
+			("way", "highway", r"^secondary$"),
+		]
+	if num_street_layers >= 5:
 		shape_types["minor_street"] = [
-			("way", "highway", r"^(tertiary|residential|living_street|busway)(_link)?$"),
+			("way", "highway", r"^(tertiary|busway|(primary|secondary|tertiary)_link)$"),
+		]
+	if num_street_layers >= 6:
+		shape_types["minor_street"] += [
+			("way", "highway", r"^(unclassified|residential|living_street)$"),
 		]
 	if show_railroads:
 		shape_types["railroad"] = [
