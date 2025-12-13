@@ -28,7 +28,7 @@ def main():
 		description="A script to automatically generate clean, high-contrast location maps for Wikipedia based on OpenStreetMap data")
 	parser.add_argument(
 		"area_specifier", type=str,
-		help="Either the desired coordinate bounds of the map in the format '{west}/{south}/{east}/{north}' (e.g. 40.84/-74.03/40.69/-73.93), or the name of an existing location map on the Wikimedia Commons (in which case we will use the same bounds as the existing map)")
+		help="Either the desired coordinate bounds of the map in the format '{south}/{north}/{west}/{east}' (e.g. 40.69/40.84/-74.03/-73.93), or the name of an existing location map on the Wikimedia Commons (in which case we will use the same bounds as the existing map)")
 	parser.add_argument(
 		"--major_streets", choices=["yes", "no", "auto"], default="auto",
 		help="Whether to include major streets on the map")
@@ -60,8 +60,8 @@ def choose_bounds(area_specifier):
 	parsing = re.fullmatch(r"([-+0-9.e]+)/([-+0-9.e]+)/([-+0-9.e]+)/([-+0-9.e]+)", area_specifier)
 	if parsing is not None:
 		# those numbers are the bounding box
-		west, south, east, north = (float(group) for group in parsing.groups())
-		bbox = BoundingBox(west, south, east, north)
+		south, west, east, north = (float(group) for group in parsing.groups())
+		bbox = BoundingBox(south, north, west, east)
 		# make up a filename
 		new_filename = f"Location map ({(south + north)/2:.1f},{(west + east)/2:.1f})"
 	# if the area specifier is a filename
@@ -82,18 +82,18 @@ def choose_bounds(area_specifier):
 			except Exception as error:
 				print(error)
 				raise ValueError("I couldn't find any bounding box information anywhere.")
-		print(f"The bounding box is {bbox.west}/{bbox.south}/{bbox.east}/{bbox.north}")
+		print(f"The bounding box is {bbox.south}/{bbox.north}/{bbox.west}/{bbox.east}")
 		# append "2" to the filename and remove the extension
 		new_filename = path.splitext(filename)[0] + " 2"
 	# double check that the bounds look right
 	if bbox.north - bbox.south < 0:
-		raise ValueError("The north edge can't be south of the south edge!")
-	elif bbox.north - bbox.south > 10:
-		raise ValueError("This script isn't built to handle maps that cover over 10° in latitude.")
-	elif bbox.east - bbox.west < 0:
-		raise ValueError("The east edge can't be west of the west edge!")
-	elif bbox.east - bbox.west > 20:
-		raise ValueError("This script isn't built to handle maps that cover over 20° in longitude.")
+		bbox.south, bbox.north = bbox.north, bbox.south
+	if bbox.north - bbox.south > 2:
+		raise ValueError("This script isn't built to handle maps that cover over 2° in latitude.")
+	if bbox.east - bbox.west < 0:
+		bbox.west, bbox.east = bbox.east, bbox.west
+	if bbox.east - bbox.west > 5:
+		raise ValueError("This script isn't built to handle maps that cover over 5° in longitude.")
 	return bbox, new_filename
 
 
@@ -108,22 +108,20 @@ def choose_bounds_from_wobpage(address):
 		raise FileNotFoundError(f"There doesn't seem to be anything at `{address}`.")
 	# extract the bounding box from the page's content
 	bounds = []
-	for direction in [["W", "left"], ["S", "bottom"], ["E", "right"], ["N", "top"]]:
+	for direction in [r"S|south|bottom", r"N|north|top", r"W|west|left", r"E|east|right"]:
 		bound = None
-		for name in direction:
-			sentence = re.search(rf"\b{name}\b[a-z</> ]*[:=] ([-+0-9.e]+)(°[NSEW])?", page.text)
-			if sentence is not None:
-				bound = float(sentence.group(1))
-				units = sentence.group(2)
-				if units is not None and (units == "°S" or units == "°W"):
-					bound *= -1
-				break
+		sentence = re.search(rf"\b({direction})\b[a-z</> ]*[:=] ([-+0-9.e]+)(°[NSEW])?", page.text)
+		if sentence is not None:
+			bound = float(sentence.group(2))
+			units = sentence.group(3)
+			if units is not None and (units == "°S" or units == "°W"):
+				bound *= -1
 		if bound is None:
 			raise ValueError(f"I can't find the {'/'.join(direction)} info on `{address}`.")
 		else:
 			bounds.append(bound)
-	west, south, east, north = bounds
-	return BoundingBox(west, south, east, north)
+	south, north, west, east = bounds
+	return BoundingBox(south, north, west, east)
 
 
 def choose_scale(bbox):
@@ -393,11 +391,11 @@ def consolidate_all_polygons(paths, bbox):
 
 
 class BoundingBox:
-	def __init__(self, west, south, east, north):
-		self.west = west
+	def __init__(self, south, north, west, east):
 		self.south = south
-		self.east = east
 		self.north = north
+		self.west = west
+		self.east = east
 
 
 if __name__ == "__main__":
