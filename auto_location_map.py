@@ -74,6 +74,15 @@ def choose_bounds(area_specifier):
 		print(f"The bounding box is {bbox.west}/{bbox.south}/{bbox.east}/{bbox.north}")
 		# append "2" to the filename and remove the extension
 		new_filename = path.splitext(filename)[0] + " 2"
+	# double check that the bounds look right
+	if bbox.north - bbox.south < 0:
+		raise ValueError("The north edge can't be south of the south edge!")
+	elif bbox.north - bbox.south > 10:
+		raise ValueError("This script isn't built to handle maps that cover over 10° in latitude.")
+	elif bbox.east - bbox.west < 0:
+		raise ValueError("The east edge can't be west of the west edge!")
+	elif bbox.east - bbox.west > 20:
+		raise ValueError("This script isn't built to handle maps that cover over 20° in longitude.")
 	return bbox, new_filename
 
 
@@ -197,6 +206,8 @@ def load_data(bbox, shape_types):
 	print(f"Loading data from OpenStreetMap...")
 	start = time()
 	response = requests.post("https://overpass-api.de/api/interpreter", data={"data": full_query})
+	if response.status_code != 200:
+		raise ValueError(f"The OpenStreetMap query failed with error code {response.status_code}.")
 	end = time()
 	data = response.json()
 	print(f"Loaded {len(data['elements'])} shapes in {end - start:.0f} seconds.")
@@ -254,7 +265,8 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 				elif shape["type"] == "relation":
 					path = []
 					for member in shape["members"]:
-						path.append(member["geometry"])
+						if "geometry" in member:
+							path.append(member["geometry"])
 					paths.append(path)
 				else:
 					raise TypeError(shape["type"])
