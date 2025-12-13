@@ -57,7 +57,7 @@ def choose_bounds(area_specifier):
 	parsing = re.fullmatch(r"([-+0-9.e]+)/([-+0-9.e]+)/([-+0-9.e]+)/([-+0-9.e]+)", area_specifier)
 	if parsing is not None:
 		# those numbers are the bounding box
-		south, west, east, north = (float(group) for group in parsing.groups())
+		south, north, west, east = (float(group) for group in parsing.groups())
 		bbox = BoundingBox(south, north, west, east)
 		# make up a filename
 		new_filename = f"Location map ({(south + north)/2:.1f},{(west + east)/2:.1f})"
