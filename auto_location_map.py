@@ -290,7 +290,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 							if re.match(values, shape["tags"][key]) is not None:
 								shapes.append(shape)
 							elif shape["tags"][key] == "construction":  # don't forget to also get the under construction features
-								if re.match(values, shape["tags"]["construction"]) is not None:
+								if "construction" in shape["tags"] and re.match(values, shape["tags"]["construction"]) is not None:
 									shapes.append(shape)
 			if len(shapes) == 0:
 				continue
