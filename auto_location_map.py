@@ -11,15 +11,15 @@ import requests
 
 STYLES = {
 	"background": "fill: #ffffff; stroke: none",
-	"sea": "fill: #b1deff; fill-rule: evenodd; stroke: none",
-	"lake": "fill: #b1deff; fill-rule: evenodd; stroke: none",
-	"green": "fill: #d5f5da; fill-rule: evenodd; stroke: none",
-	"sand": "fill: #fde8c6; fill-rule: evenodd; stroke: none",
-	"airport": "fill: #f0e9ed; fill-rule: evenodd; stroke: none",
-	"minor_street": "fill: none; stroke: #c7b9c2; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
-	"major_street": "fill: none; stroke: #c7b9c2; stroke-width: 0.71; stroke-linejoin: round; stroke-linecap: round",
-	"highway": "fill: none; stroke: #c3a8b9; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round",
-	"railroad": "fill: none; stroke: #a39ca0; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
+	"sea": "fill: #a4d8fe; fill-rule: evenodd; stroke: none",
+	"lake": "fill: #a4d8fe; fill-rule: evenodd; stroke: none",
+	"green": "fill: #d1f2d7; fill-rule: evenodd; stroke: none",
+	"airport": "fill: #f0e3ee; fill-rule: evenodd; stroke: none",
+	"airstrip": "fill: none; stroke: #ccc0ca; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: butt",
+	"minor_street": "fill: none; stroke: #c1b9ad; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
+	"major_street": "fill: none; stroke: #c1b9ad; stroke-width: 0.71; stroke-linejoin: round; stroke-linecap: round",
+	"highway": "fill: none; stroke: #c9a973; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round",
+	"railroad": "fill: none; stroke: #bf968f; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
 }
 
 
@@ -142,7 +142,7 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 	else:
 		show_railroads = railroads == "yes"
 	if parks == "auto":
-		show_parks = abs(y_scale) > 500
+		show_parks = abs(y_scale) > 200
 	else:
 		show_parks = parks == "yes"
 	if street_detail == "auto":
@@ -170,6 +170,9 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 		"lake": [
 			("nwr", "natural", r"^water$"),
 		],
+		"airport": [
+			("nwr", "aeroway", r"^(aerodrome|airstrip|heliport|launch_complex)$"),
+		],
 	}
 	if num_street_layers >= 1:
 		shape_types["highway"] = [
@@ -180,6 +183,9 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 			("way", "highway", r"^trunk$"),
 		]
 	if num_street_layers >= 3:
+		shape_types["airstrip"] = [
+			("way", "aeroway", r"^runway$"),
+		]
 		shape_types["major_street"] = [
 			("way", "highway", r"^(primary|(motorway|trunk)_link)$"),
 		]
@@ -205,12 +211,6 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 			("nwr", "natural", r"^(grassland|heath|scrub|tundra|wood|wetland)$"),
 			("nwr", "landuse", r"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"),
 		]
-		shape_types["sand"] = [
-			("nwr", "natural", r"(sand|beach)"),
-		]
-	shape_types["airport"] = [
-		("nwr", "aeroway", r"^(aerodrome|heliport|launch_complex)$")
-	]
 
 	return shape_types
 
@@ -220,9 +220,9 @@ def load_data(bbox, shape_types):
 	full_query = f"[out:json][bbox:{bbox.south},{bbox.west},{bbox.north},{bbox.east}]; ( "
 	for query_set in shape_types.values():
 		for kind, key, values in query_set:
-			full_query += f'{kind}[{key}~"{values}"]; '
+			full_query += f'{kind}["{key}"~"{values}"]; '
 			if key in ["highway", "railway", "landuse"]:  # don't forget to also query roads under construction
-				full_query += f'{kind}[{key}="construction"][construction~"{values}"]; '
+				full_query += f'{kind}["{key}"="construction"]["construction"~"{values}"]; '
 	full_query += f"); out geom;"
 	print(f"Loading data from OpenStreetMap...")
 	start = time()
@@ -262,7 +262,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 	for shape_type in shape_types:
 		stylesheet += f"\t\t.{shape_type} {{ {STYLES[shape_type]} }}\n"
 	if "stroke-width: 0.71" not in stylesheet:  # make the highways thinner if possible
-		stylesheet = stylesheet.replace("1.06", "0.71")
+		stylesheet = stylesheet.replace("1.06", "0.53")
 
 	# write the file
 	print("writing the SVG file...")
@@ -281,7 +281,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 		)
 
 		# for each type of data, in order
-		for shape_type in ["sea", "green", "sand", "airport", "lake", "minor_street", "major_street", "highway", "railroad"]:
+		for shape_type in ["sea", "green", "airport", "airstrip", "lake", "minor_street", "major_street", "highway", "railroad"]:
 			if shape_type not in shape_types:
 				continue
 
