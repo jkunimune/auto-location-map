@@ -30,7 +30,7 @@ def main():
 		"area_specifier", type=str,
 		help="Either the desired coordinate bounds of the map in the format '{south}/{north}/{west}/{east}' (e.g. 40.69/40.84/-74.03/-73.93), or the name of an existing location map on the Wikimedia Commons (in which case we will use the same bounds as the existing map)")
 	parser.add_argument(
-		"--street_detail", choices=["0", "1", "2", "3", "4", "5", "6", "auto"], default="auto",
+		"--street-detail", choices=["0", "1", "2", "3", "4", "5", "6", "auto"], default="auto",
 		help="How many layers of street detail: 2 for only highways, 4 for major streets but not residential streets, 6 for all streets, etc.")
 	parser.add_argument(
 		"--railroads", choices=["yes", "no", "auto"], default="auto",
