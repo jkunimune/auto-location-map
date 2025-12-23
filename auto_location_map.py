@@ -69,18 +69,20 @@ def choose_bounds(area_specifier):
 			filename = area_specifier.replace("File:", "")
 			if path.splitext(filename)[1] == "":
 				filename += ".png"
-			bbox = choose_bounds_from_wobpage(f"http://commons.wikimedia.org/wiki/File:{filename.replace(' ', '_')}")
+			bbox, page_filename = choose_bounds_from_wobpage(f"http://commons.wikimedia.org/wiki/File:{filename.replace(' ', '_')}")
 		except Exception as error:
 			print(error)
 			try:
 				print("Reading the existing module data page...")
 				filename = area_specifier.replace("Module:", "").replace("Location map/data/", "")
-				bbox = choose_bounds_from_wobpage(f"http://en.wikipedia.org/wiki/Module:Location map/data/{filename.replace(' ', '_')}")
+				bbox, page_filename = choose_bounds_from_wobpage(f"http://en.wikipedia.org/wiki/Module:Location map/data/{filename.replace(' ', '_')}")
 			except Exception as error:
 				print(error)
 				raise ValueError("I couldn't find any bounding box information anywhere.")
 		print(f"The bounding box is {bbox.south}/{bbox.north}/{bbox.west}/{bbox.east}")
 		# append "2" to the filename and remove the extension
+		if page_filename is not None:
+			filename = page_filename
 		new_filename = path.splitext(filename)[0] + " 2"
 	# double check that the bounds look right
 	if bbox.north - bbox.south < 0:
@@ -106,19 +108,24 @@ def choose_bounds_from_wobpage(address):
 	# extract the bounding box from the page's content
 	bounds = []
 	for direction in [r"S|south|bottom", r"N|north|top", r"W|west|left", r"E|east|right"]:
-		bound = None
-		sentence = re.search(rf"\b({direction})\b[a-z</>\s]*[:=]\s*([-+0-9.e]+)(°[NSEW])?", page.text)
+		sentence = re.search(rf"\b({direction})\b[a-z</>\s]*[:=]\s+([-+0-9]+\.[0-9]+)(°[NSEW])?", page.text)
 		if sentence is not None:
 			bound = float(sentence.group(2))
 			units = sentence.group(3)
 			if units is not None and (units == "°S" or units == "°W"):
 				bound *= -1
-		if bound is None:
-			raise ValueError(f"I can't find the {'/'.join(direction)} info on `{address}`.")
-		else:
 			bounds.append(bound)
+		else:
+			raise ValueError(f"I can't find the {'/'.join(direction)} info on `{address}`.")
 	south, north, west, east = bounds
-	return BoundingBox(south, north, west, east)
+
+	sentence = re.search(r"\bimage\b[a-z</>\s]*[:=]\s.*>([^<>/\\]+\.[A-Za-z]+)<", page.text)
+	if sentence is not None:
+		filename = sentence.group(1)
+	else:
+		filename = None
+
+	return BoundingBox(south, north, west, east), filename
 
 
 def choose_scale(bbox):
