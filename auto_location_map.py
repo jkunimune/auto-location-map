@@ -13,13 +13,14 @@ STYLES = {
 	"background": "fill: #ffffff; stroke: none",
 	"sea": "fill: #a4d8fe; fill-rule: evenodd; stroke: none",
 	"lake": "fill: #a4d8fe; fill-rule: evenodd; stroke: none",
-	"green": "fill: #d1f2d7; fill-rule: evenodd; stroke: none",
+	"green": "fill: #c5f7ce; fill-rule: evenodd; stroke: none",
 	"airport": "fill: #f0e3ee; fill-rule: evenodd; stroke: none",
-	"airstrip": "fill: none; stroke: #ccc0ca; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: butt",
-	"minor_street": "fill: none; stroke: #c1b9ad; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
-	"major_street": "fill: none; stroke: #c1b9ad; stroke-width: 0.71; stroke-linejoin: round; stroke-linecap: round",
-	"highway": "fill: none; stroke: #c9a973; stroke-width: 1.06; stroke-linejoin: round; stroke-linecap: round",
-	"railroad": "fill: none; stroke: #bf968f; stroke-width: 0.35; stroke-linejoin: round; stroke-linecap: round",
+	"airstrip": "fill: none; stroke: #ccc0ca; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: butt",
+	"minor_street": "fill: none; stroke: #c1b9ad; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
+	"major_street": "fill: none; stroke: #c1b9ad; stroke-width: «1»; stroke-linejoin: round; stroke-linecap: round",
+	"minor_highway": "fill: none; stroke: #cfa761; stroke-width: «2»; stroke-linejoin: round; stroke-linecap: round",
+	"major_highway": "fill: none; stroke: #cfa761; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: round",
+	"railroad": "fill: none; stroke: #d9897c; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
 }
 
 
@@ -145,7 +146,7 @@ def choose_scale(bbox):
 def choose_queries(street_detail, railroads, parks, y_scale):
 	# decide which elements to show
 	if railroads == "auto":
-		show_railroads = abs(y_scale) > 5000
+		show_railroads = abs(y_scale) > 2000
 	else:
 		show_railroads = railroads == "yes"
 	if parks == "auto":
@@ -153,15 +154,15 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 	else:
 		show_parks = parks == "yes"
 	if street_detail == "auto":
-		if abs(y_scale) > 5000:
+		if abs(y_scale) > 2000:
 			num_street_layers = 6  # all streets
-		elif abs(y_scale) > 2000:
-			num_street_layers = 5  # all but residential streets
 		elif abs(y_scale) > 1000:
-			num_street_layers = 4  # primary and secondary streets
+			num_street_layers = 5  # all but residential streets
 		elif abs(y_scale) > 500:
-			num_street_layers = 3  # primary streets
+			num_street_layers = 4  # primary and secondary streets
 		elif abs(y_scale) > 200:
+			num_street_layers = 3  # primary streets
+		elif abs(y_scale) > 100:
 			num_street_layers = 2  # only highways
 		else:
 			num_street_layers = 1  # only motorways
@@ -182,11 +183,11 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 		],
 	}
 	if num_street_layers >= 1:
-		shape_types["highway"] = [
+		shape_types["major_highway"] = [
 			("way", "highway", r"^motorway$"),
 		]
 	if num_street_layers >= 2:
-		shape_types["highway"] += [
+		shape_types["minor_highway"] = [
 			("way", "highway", r"^trunk$"),
 		]
 	if num_street_layers >= 3:
@@ -268,8 +269,11 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 	stylesheet = f"\t\t.background {{ {STYLES['background']} }}\n"
 	for shape_type in shape_types:
 		stylesheet += f"\t\t.{shape_type} {{ {STYLES[shape_type]} }}\n"
-	if "stroke-width: 0.71" not in stylesheet:  # make the highways thinner if possible
-		stylesheet = stylesheet.replace("1.06", "0.53")
+	# choose the line thicknesses
+	thicknesses = [1.12, 0.84, 0.56, 0.35]
+	for i in range(4):
+		if f"«{i}»" in stylesheet:
+			stylesheet = stylesheet.replace(f"«{i}»", f"{thicknesses.pop()}")
 
 	# write the file
 	print("writing the SVG file...")
@@ -288,7 +292,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 		)
 
 		# for each type of data, in order
-		for shape_type in ["sea", "green", "airport", "airstrip", "lake", "minor_street", "major_street", "highway", "railroad"]:
+		for shape_type in ["sea", "green", "airport", "airstrip", "lake", "minor_street", "major_street", "minor_highway", "major_highway", "railroad"]:
 			if shape_type not in shape_types:
 				continue
 

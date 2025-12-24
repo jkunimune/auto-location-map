@@ -31,12 +31,9 @@ python auto_location_map.py 'United States Lower Manhattan'
 
 # Adjusting the maps
 
-You can control the amount of detail in the map with command-line arguments.  By default, it tries to do this automatically, but because OpenStreetMap isn't super consistent about how roads in different places are categorized, it sometimes needs adjustment.
+You can control the amount of detail in the map with command-line arguments.
 
-To increase or decrease the number of streets, use `--street-detail`.  This is a flag between 0 and 6; lower numbers only show major streets and higher numbers include smaller streets.  If you run the script without specifying it, it will tell you what number it picked.  You'll generally only need to go above or below the default by 1 to get a good map.  For example, for the downtown Manhattan example, the default street detail is 5, but I find that it looks better with 6:
-```bash
-python auto_location_map.py --street-detail=6 'Location map Lower Manhattan.png'
-```
+To increase or decrease the number of streets, use `--street-detail`.  This is a flag between 0 and 6; lower numbers only show major streets and higher numbers include smaller streets.  If you run the script without specifying it, it will tell you what number it picked.
 
 You can also force or suppress the inclusion of railroads by passing `--railroads=yes` or `--railroads=no`, respectively.  Similarly, you can show or hide green space by passing `--parks=yes` or `--parks=no`.  For example, if for some reason you want a railroad map of downtown Manhattan you can do this:
 ```bash
