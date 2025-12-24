@@ -2,7 +2,7 @@ auto location map
 =================
 This is a Python script to automatically generate clean, high-contrast city location maps for Wikipedia based on OpenStreetMap data.
 
-Location maps are the backgrounds used for the "pushpin" maps you sometimes see in Wikipedia infoboxes (for example in [this 2025 version of the article "Madison Square"](https://en.wikipedia.org/w/index.php?title=Madison_Square_and_Madison_Square_Park&oldid=1321445972), captioned "Location within Manhattan").  Because they appear quite small in the article, they should be light, simple, and free of clutter.  Naive methods of generating them, such as reusing maps from other contexts or taking screenshots of OpenStreetMap, tend to produce maps that are ill-suited to this purpose.  The purpose of this script is to provide an easy way to generate better location maps using open-source data.
+Location maps are the backgrounds used for the "pushpin" maps you sometimes see in Wikipedia infoboxes (for example in [this 2025 version of the article "Madison Square"](https://en.wikipedia.org/w/index.php?title=Madison_Square_and_Madison_Square_Park&oldid=1321445972), captioned "Location within Manhattan").  Because they appear quite small in the article, they should be light, simple, and free of clutter.  Naive methods of generating them, such as reusing maps from other contexts or taking screenshots of OpenStreetMap, tend to produce maps that are ill-suited to this purpose.  In particular, labels are almost always unreadable at infobox scales and do nothing but add visual noise.  The purpose of this script is to provide an easy way to generate better location maps using open-source data.
 
 # Installation
 
@@ -19,6 +19,9 @@ python auto_location_map.py -- -74.0206/40.6979/-73.9655/40.7476
 ```
 
 The script will query OpenStreetMap for data in that rectangle and write an SVG file, which gets saved to the directory `maps/`.  It can be viewed with most browsers, or with a vector image editor like Inkscape or Adobe Illustrator.
+
+Here is the result of the above command:
+![Location map of Lower Manhattan showing streets, highways, and parks](https://upload.wikimedia.org/wikipedia/commons/f/f3/Location_map_Lower_Manhattan_2.svg)
 
 Instead of passing the exact coordinates, you can also pass the name of an existing location map file or module on Wikipedia, and it will read those pages to infer the bounds.  Don't forget to use quotation marks if it contains spaces.  So for example, this will make a map that matches [File:Location map Lower Manhattan.png](https://commons.wikimedia.org/wiki/File:Location_map_Lower_Manhattan.png):
 ```bash
