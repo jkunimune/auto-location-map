@@ -79,7 +79,7 @@ def choose_bounds(area_specifier):
 				bbox, page_filename = choose_bounds_from_wobpage(f"http://en.wikipedia.org/wiki/Module:Location map/data/{filename.replace(' ', '_')}")
 			except Exception as error:
 				print(error)
-				raise ValueError("I couldn't find any bounding box information anywhere.")
+				raise ValueError("I couldn't find any bounding box information anywhere.  Are you sure the filename you entered is correct?")
 		print(f"The bounding box is {bbox.south}/{bbox.north}/{bbox.west}/{bbox.east}")
 		# append "2" to the filename and remove the extension
 		if page_filename is not None:
@@ -117,7 +117,7 @@ def choose_bounds_from_wobpage(address):
 				bound *= -1
 			bounds.append(bound)
 		else:
-			raise ValueError(f"I can't find the {'/'.join(direction)} info on `{address}`.")
+			raise ValueError(f"I can't find the {direction} info on `{address}`.")
 	south, north, west, east = bounds
 
 	sentence = re.search(r"\bimage\b[a-z</>\s]*[:=]\s.*>([^<>/\\]+\.[A-Za-z]+)<", page.text)
@@ -276,7 +276,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 			stylesheet = stylesheet.replace(f"«{i}»", f"{thicknesses.pop()}")
 
 	# write the file
-	print("writing the SVG file...")
+	print("Writing the SVG file...")
 	width = x_scale*(bbox.east - bbox.west)
 	height = y_scale*(bbox.south - bbox.north)
 	makedirs("maps", exist_ok=True)
