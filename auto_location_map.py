@@ -11,16 +11,16 @@ import requests
 
 STYLES = {
 	"background": "fill: #ffffff; stroke: none",
-	"sea": "fill: #a4d8fe; fill-rule: evenodd; stroke: none",
-	"lake": "fill: #a4d8fe; fill-rule: evenodd; stroke: none",
-	"green": "fill: #c5f7ce; fill-rule: evenodd; stroke: none",
-	"airport": "fill: #f0e3ee; fill-rule: evenodd; stroke: none",
+	"sea": "fill: #b1deff; fill-rule: evenodd; stroke: none",
+	"lake": "fill: #b1deff; fill-rule: evenodd; stroke: none",
+	"green": "fill: #cdf8d5; fill-rule: evenodd; stroke: none",
+	"airport": "fill: #f3e7f2; fill-rule: evenodd; stroke: none",
 	"airstrip": "fill: none; stroke: #ccc0ca; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: butt",
-	"minor_street": "fill: none; stroke: #c1b9ad; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
-	"major_street": "fill: none; stroke: #c1b9ad; stroke-width: «1»; stroke-linejoin: round; stroke-linecap: round",
-	"minor_highway": "fill: none; stroke: #cfa761; stroke-width: «2»; stroke-linejoin: round; stroke-linecap: round",
-	"major_highway": "fill: none; stroke: #cfa761; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: round",
-	"railroad": "fill: none; stroke: #d9897c; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
+	"minor_street": "fill: none; stroke: #cbc3b6; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
+	"major_street": "fill: none; stroke: #cbc3b6; stroke-width: «1»; stroke-linejoin: round; stroke-linecap: round",
+	"minor_highway": "fill: none; stroke: #dcb46e; stroke-width: «2»; stroke-linejoin: round; stroke-linecap: round",
+	"major_highway": "fill: none; stroke: #dcb46e; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: round",
+	"railroad": "fill: none; stroke: #ea998b; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
 }
 
 
