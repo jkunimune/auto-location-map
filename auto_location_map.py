@@ -343,35 +343,33 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 def consolidate_multipolygons(paths):
 	finished_paths = []
 	for path in paths:
-		closed_segments = []
-		open_segments = path[:]
-		num_segments_checked = 0
-		while num_segments_checked < len(open_segments):
+		finished_segments = []
+		pending_segments = path[:]
+		while len(pending_segments) > 0:
 			# examine an arbitrary open segment
-			last_segment = open_segments.pop()
+			last_segment = pending_segments.pop()
 			# if it's already closed, we're done here
 			if last_segment[0] == last_segment[-1]:
-				closed_segments.append(last_segment)
+				finished_segments.append(last_segment)
 				continue
 			# otherwise, search for another segment that starts or ends with its endpoint
 			next_segment = None
-			for i in range(len(open_segments)):
-				if open_segments[i][0] == last_segment[-1]:
-					next_segment = open_segments.pop(i)
-					break
-				elif open_segments[i][-1] == last_segment[-1]:
-					next_segment = open_segments.pop(i)[::-1]
-					break
-			# if no one starts with its endpoint, mark it as checked
+			for segments in [pending_segments, finished_segments]:
+				for i in range(len(segments)):
+					if segments[i][0] == last_segment[-1]:
+						next_segment = segments.pop(i)
+						break
+					elif segments[i][-1] == last_segment[-1]:
+						next_segment = segments.pop(i)[::-1]
+						break
+			# if no one starts with its endpoint, consider it finalized for now
 			if next_segment is None:
-				open_segments.insert(0, last_segment)
-				num_segments_checked += 1
-			# if you found another one that starts with its endpoint, stick them together and repeat
+				finished_segments.append(last_segment)
+			# if you found another one that starts with its endpoint, stick them together and add that to the queue
 			else:
-				last_segment += next_segment
-				open_segments.append(last_segment)
+				pending_segments.append(last_segment + next_segment)
 		# when you run out of segments, you're done
-		finished_paths.append(open_segments + closed_segments)
+		finished_paths.append(finished_segments)
 	return finished_paths
 
 
