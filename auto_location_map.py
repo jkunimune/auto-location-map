@@ -15,7 +15,7 @@ STYLES = {
 	"lake": "fill: #b1deff; fill-rule: evenodd; stroke: none",
 	"green": "fill: #cdf8d5; fill-rule: evenodd; stroke: none",
 	"airport": "fill: #f3e7f2; fill-rule: evenodd; stroke: none",
-	"airstrip": "fill: none; stroke: #ccc0ca; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: butt",
+	"airstrip": "fill: none; stroke: #d6c9d4; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: butt",
 	"minor_street": "fill: none; stroke: #cbc3b6; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
 	"major_street": "fill: none; stroke: #cbc3b6; stroke-width: «1»; stroke-linejoin: round; stroke-linecap: round",
 	"minor_highway": "fill: none; stroke: #dcb46e; stroke-width: «2»; stroke-linejoin: round; stroke-linecap: round",
@@ -215,7 +215,7 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 		]
 	if show_parks:
 		shape_types["green"] = [
-			("nwr", "leisure", r"^(park|dog_park|pitch|stadium|golf_course|garden)$"),
+			("nwr", "leisure", r"^(park|dog_park|pitch|stadium|golf_course|garden|nature_reserve)$"),
 			("nwr", "natural", r"^(grassland|heath|scrub|tundra|wood|wetland)$"),
 			("nwr", "landuse", r"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"),
 		]
