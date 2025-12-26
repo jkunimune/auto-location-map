@@ -21,7 +21,13 @@ STYLES = {
 	"minor_highway": "fill: none; stroke: #dcb46e; stroke-width: «2»; stroke-linejoin: round; stroke-linecap: round",
 	"major_highway": "fill: none; stroke: #dcb46e; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: round",
 	"railroad": "fill: none; stroke: #ea998b; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
+	"border": "fill: none; stroke: #a8a8a8; stroke-width: 0.56; stroke-linejoin: round; stroke-linecap: square; stroke-dasharray: 0.01 1.12 0.56 1.12",
 }
+
+LAYER_ORDER = [
+	"sea", "green", "airport", "airstrip", "lake", "minor_street", "major_street",
+	"minor_highway", "major_highway", "railroad", "border",
+]
 
 
 def main():
@@ -39,6 +45,9 @@ def main():
 	parser.add_argument(
 		"--parks", choices=["yes", "no", "auto"], default="auto",
 		help="Whether to include parkland on the map")
+	parser.add_argument(
+		"--border-detail", type=int, default=0,
+		help="The level of detail at which to show political borders")
 	args = parser.parse_args()
 
 	bbox, new_filename = choose_bounds(args.area_specifier)
@@ -46,7 +55,7 @@ def main():
 	x_scale, y_scale = choose_scale(bbox)
 
 	shape_types = choose_queries(
-		args.street_detail, args.railroads, args.parks, y_scale)
+		args.border_detail, args.street_detail, args.railroads, args.parks, y_scale)
 
 	data = load_data(bbox, shape_types)
 
@@ -143,7 +152,7 @@ def choose_scale(bbox):
 	return x_scale, y_scale
 
 
-def choose_queries(street_detail, railroads, parks, y_scale):
+def choose_queries(border_detail, street_detail, railroads, parks, y_scale):
 	# decide which elements to show
 	if railroads == "auto":
 		show_railroads = abs(y_scale) > 2000
@@ -219,6 +228,10 @@ def choose_queries(street_detail, railroads, parks, y_scale):
 			("nwr", "natural", r"^(grassland|heath|scrub|tundra|wood|wetland)$"),
 			("nwr", "landuse", r"^(farmland|forest|meadow|orchard|vineyard|cemetery|recreation_ground|village_green)$"),
 		]
+	if border_detail != 0:
+		shape_types["border"] = [
+			("nwr[boundary=administrative]", "admin_level", fr"^{border_detail}$")
+		]
 
 	return shape_types
 
@@ -292,7 +305,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 		)
 
 		# for each type of data, in order
-		for shape_type in ["sea", "green", "airport", "airstrip", "lake", "minor_street", "major_street", "minor_highway", "major_highway", "railroad"]:
+		for shape_type in LAYER_ORDER:
 			if shape_type not in shape_types:
 				continue
 
@@ -425,7 +438,6 @@ def consolidate_all_polygons(paths, bbox):
 				new_closed_segment += next_segment
 
 	return [closed_segments]
-
 
 
 class BoundingBox:

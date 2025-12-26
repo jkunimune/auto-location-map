@@ -43,3 +43,8 @@ You can also force or suppress the inclusion of railroads by passing `--railroad
 ```bash
 python auto_location_map.py --street-detail=0 --railroads=yes --parks=no 'Location map Lower Manhattan.png'
 ```
+
+Finally, you can show political borders by using `--border-detail`.  This is an integer that represents the level of division to show.  `--border-detail=2` shows national borders, `--border-detail=4` shows provincial borders, `--border-detail=6` shows whatever the local equivalent of county borders is, and so on.  So to show the borough boundaries, you can do this:
+```bash
+python auto_location_map.py --border-detail=7 'Location map Lower Manhattan.png'
+```
