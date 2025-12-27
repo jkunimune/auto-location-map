@@ -336,7 +336,9 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 					paths.append(path)
 				else:
 					raise TypeError(shape["type"])
-			if shape_type == "sea":  # for coastlines, don't forget to stitch them together
+			if shape_type == "border":  # for borders, remove the repeated lines
+				paths = consolidate_multipolygons(remove_duplicate_paths(paths))
+			elif shape_type == "sea":  # for coastlines, don't forget to stitch them together
 				paths = consolidate_all_polygons(paths, bbox)
 			else:  # for other layers, you still do some stitching but it's not as complicated
 				paths = consolidate_multipolygons(paths)
@@ -355,6 +357,20 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 			file.write(f'\t</g>\n')
 		file.write("</svg>\n")
 	print(f"Saved the map to `maps/{new_filename}.svg`!")
+
+
+def remove_duplicate_paths(paths):
+	# first, dump all of the path parts into one bin of path parts
+	paths = list(chain(*paths))
+	# then look for identical path parts
+	for i in reversed(range(len(paths))):
+		for j in range(i):
+			if paths[i] == paths[j]:
+				paths.pop(i)
+				break
+	# then run a quick consolidation algorithm on what's left
+	paths = consolidate_multipolygons([paths])[0]
+	return [[path] for path in paths]
 
 
 def consolidate_multipolygons(paths):
@@ -417,7 +433,7 @@ def consolidate_all_polygons(paths, bbox):
 	] + megapath
 	# pull out any segments that are already closed
 	closed_segments = []
-	for i in range(len(open_segments) - 1, 3, -1):
+	for i in reversed(range(4, len(open_segments) - 1)):
 		if open_segments[i][0] == open_segments[i][-1]:
 			closed_segments.append(open_segments.pop(i))
 	# then, pull off arbitrary open segments and try to complete them
