@@ -1,6 +1,6 @@
 import argparse
 from itertools import chain
-from math import pi, sqrt, cos, radians, atan2
+from math import inf, pi, sqrt, cos, radians, atan2, hypot
 from os import makedirs, path
 import re
 from time import time, sleep, strftime
@@ -365,12 +365,15 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 					paths.append(path)
 				else:
 					raise TypeError(shape["type"])
-			if shape_type == "border":  # for borders, remove the repeated lines
-				paths = consolidate_multipolygons(remove_duplicate_paths(paths))
-			elif shape_type == "sea":  # for coastlines, don't forget to stitch them together
-				paths = consolidate_all_polygons(paths, bbox)
-			else:  # for other layers, you still do some stitching but it's not as complicated
-				paths = consolidate_multipolygons(paths)
+			# stitch the loaded paths together as necessary
+			if shape_type == "sea":  # for coastlines this is especially involved
+				paths = close_polygon(consolidate_all_polygons(paths), bbox)
+			elif shape_type == "border":
+				paths = consolidate_all_polygons(purge_duplicate_paths(paths))
+			elif "fill: none" in STYLES[shape_type]:
+				paths = consolidate_all_polygons(paths)
+			else:
+				paths = consolidate_multipolygons(purge_small_polygons(paths, x_scale, y_scale))
 
 			# convert it to SVG paths
 			file.write(f'\t<g class="{shape_type}">\n')
@@ -386,20 +389,6 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 			file.write(f'\t</g>\n')
 		file.write("</svg>\n")
 	print(f"Saved the map to `maps/{new_filename}.svg`!")
-
-
-def remove_duplicate_paths(paths):
-	# first, dump all of the path parts into one bin of path parts
-	paths = list(chain(*paths))
-	# then look for identical path parts
-	for i in reversed(range(len(paths))):
-		for j in range(i):
-			if paths[i] == paths[j]:
-				paths.pop(i)
-				break
-	# then run a quick consolidation algorithm on what's left
-	paths = consolidate_multipolygons([paths])[0]
-	return [[path] for path in paths]
 
 
 def consolidate_multipolygons(paths):
@@ -424,6 +413,8 @@ def consolidate_multipolygons(paths):
 					elif segments[i][-1] == last_segment[-1]:
 						next_segment = segments.pop(i)[::-1]
 						break
+				if next_segment is not None:
+					break
 			# if no one starts with its endpoint, consider it finalized for now
 			if next_segment is None:
 				finished_segments.append(last_segment)
@@ -435,7 +426,13 @@ def consolidate_multipolygons(paths):
 	return finished_paths
 
 
-def consolidate_all_polygons(paths, bbox):
+def consolidate_all_polygons(paths):
+	megapath = list(chain(*paths))
+	megapath = consolidate_multipolygons([megapath])[0]
+	return [[part] for part in megapath]
+
+
+def close_polygon(paths, bbox):
 	# define this little utility function real quick
 	def angular_distance(point_A, point_B):
 		θ_A = atan2(
@@ -449,17 +446,13 @@ def consolidate_all_polygons(paths, bbox):
 		else:
 			return θ_A - θ_B + 2*pi
 
-	# first, run the regular consolidation algorithm on all the paths together
-	megapath = list(chain(*paths))
-	megapath = consolidate_multipolygons([megapath])[0]
-
 	# first, add the corners to the set of segments to stitch together
 	open_segments = [
 		[{"lat": bbox.north, "lon": bbox.east}],
 		[{"lat": bbox.north, "lon": bbox.west}],
 		[{"lat": bbox.south, "lon": bbox.east}],
 		[{"lat": bbox.south, "lon": bbox.west}],
-	] + megapath
+	] + [path[0] for path in paths]
 	# pull out any segments that are already closed
 	closed_segments = []
 	for i in reversed(range(4, len(open_segments) - 1)):
@@ -483,6 +476,43 @@ def consolidate_all_polygons(paths, bbox):
 				new_closed_segment += next_segment
 
 	return [closed_segments]
+
+
+def purge_duplicate_paths(paths):
+	# first, dump all of the path parts into one bin of path parts
+	paths = list(chain(*paths))
+	# then look for identical path parts
+	for i in reversed(range(len(paths))):
+		for j in range(i):
+			if paths[i] == paths[j]:
+				paths.pop(i)
+				break
+	# then run a quick consolidation algorithm on what's left
+	return [[path] for path in paths]
+
+
+def purge_small_polygons(paths, x_scale, y_scale):
+	# remove paths that have very small bounding boxen
+	for i in reversed(range(len(paths))):
+		path = paths[i]
+		x_min, x_max = inf, -inf
+		y_min, y_max = inf, -inf
+		for part in path:
+			for point in part:
+				x = x_scale*point["lon"]
+				y = y_scale*point["lat"]
+				if x < x_min:
+					x_min = x
+				if x > x_max:
+					x_max = x
+				if y < y_min:
+					y_min = y
+				if y > y_max:
+					y_max = y
+		size = hypot(x_max - x_min, y_max - y_min)
+		if size < 1:
+			paths.pop(i)
+	return paths
 
 
 class BoundingBox:
