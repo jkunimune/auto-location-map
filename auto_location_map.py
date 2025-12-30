@@ -43,6 +43,12 @@ def main():
 		"--railroads", choices=["yes", "no", "auto"], default="auto",
 		help="Whether to include passenger railways on the map")
 	parser.add_argument(
+		"--tramways", choices=["yes", "no", "auto"], default="auto",
+		help="Whether to show dedicated tramways and busways as major streets")
+	parser.add_argument(
+		"--walkways", choices=["yes", "no", "auto"], default="auto",
+		help="Whether to show pedestrian malls as minor streets")
+	parser.add_argument(
 		"--parks", choices=["yes", "no", "auto"], default="auto",
 		help="Whether to include parkland on the map")
 	parser.add_argument(
@@ -55,7 +61,8 @@ def main():
 	x_scale, y_scale = choose_scale(bbox)
 
 	shape_types = choose_queries(
-		args.border_detail, args.street_detail, args.railroads, args.parks, y_scale)
+		args.border_detail, args.street_detail,
+		args.railroads, args.tramways, args.walkways, args.parks, y_scale)
 
 	data = load_data(bbox, shape_types)
 
@@ -152,16 +159,8 @@ def choose_scale(bbox):
 	return x_scale, y_scale
 
 
-def choose_queries(border_detail, street_detail, railroads, parks, y_scale):
+def choose_queries(border_detail, street_detail, railroads, tramways, walkways, parks, y_scale):
 	# decide which elements to show
-	if railroads == "auto":
-		show_railroads = abs(y_scale) > 2000
-	else:
-		show_railroads = railroads == "yes"
-	if parks == "auto":
-		show_parks = abs(y_scale) > 200
-	else:
-		show_parks = parks == "yes"
 	if street_detail == "auto":
 		if abs(y_scale) > 1200:
 			num_street_layers = 6  # all streets
@@ -178,6 +177,22 @@ def choose_queries(border_detail, street_detail, railroads, parks, y_scale):
 		print(f"Setting the street detail to {num_street_layers}.")
 	else:
 		num_street_layers = int(street_detail)
+	if railroads == "auto":
+		show_railroads = abs(y_scale) > 1200
+	else:
+		show_railroads = railroads == "yes"
+	if tramways == "auto":
+		show_tramways = num_street_layers >= 3 and abs(y_scale) > 300
+	else:
+		show_tramways = tramways == "yes"
+	if walkways == "auto":
+		show_walkways = num_street_layers >= 5 and abs(y_scale) > 2400
+	else:
+		show_walkways = walkways == "yes"
+	if parks == "auto":
+		show_parks = abs(y_scale) > 150
+	else:
+		show_parks = parks == "yes"
 
 	# put together the tags that define the relevant data
 	shape_types = {
@@ -212,11 +227,23 @@ def choose_queries(border_detail, street_detail, railroads, parks, y_scale):
 		]
 	if num_street_layers >= 5:
 		shape_types["minor_street"] = [
-			("way", "highway", r"^(tertiary|busway|(primary|secondary|tertiary)_link)$"),
+			("way", "highway", r"^(tertiary|(primary|secondary|tertiary)_link)$"),
 		]
 	if num_street_layers >= 6:
 		shape_types["minor_street"] += [
 			("way", "highway", r"^(unclassified|residential|living_street)$"),
+		]
+	if show_tramways:
+		if "major_street" not in shape_types:
+			shape_types["major_street"] = []
+		shape_types["major_street"] += [
+			("way", "railway", r"^tram$"),
+		]
+	if show_walkways:
+		if "minor_street" not in shape_types:
+			shape_types["minor_street"] = []
+		shape_types["minor_street"] += [
+			("way[area!=yes]", "highway", r"^pedestrian$")
 		]
 	if show_railroads:
 		shape_types["railroad"] = [
