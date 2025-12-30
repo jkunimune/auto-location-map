@@ -258,8 +258,7 @@ def choose_queries(border_detail, street_detail, railroads, tramways, walkways, 
 		]
 	if border_detail != 0:
 		shape_types["border"] = [
-			("way[!admin_level]", "boundary", r"^administrative$"),
-			("way[boundary=administrative]", "admin_level", fr"^[1-{border_detail}]$"),
+			("relation[boundary=administrative]", "admin_level", fr"^[1-{border_detail}]$"),
 		]
 
 	return shape_types
@@ -357,11 +356,12 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 			for shape in shapes:
 				if shape["type"] == "way":
 					paths.append([shape["geometry"]])
-				elif shape["type"] == "relation":
+				elif shape["type"] == "relation":  # for relations pull out the members and make sure it's in bounds
 					path = []
 					for member in shape["members"]:
 						if "geometry" in member:
-							path.append(member["geometry"])
+							if any_in_bounds(member["geometry"], bbox):
+								path.append(member["geometry"])
 					paths.append(path)
 				else:
 					raise TypeError(shape["type"])
@@ -373,7 +373,7 @@ def write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data):
 			elif "fill: none" in STYLES[shape_type]:
 				paths = consolidate_all_polygons(paths)
 			else:
-				paths = consolidate_multipolygons(purge_small_polygons(paths, x_scale, y_scale))
+				paths = purge_small_polygons(consolidate_multipolygons(paths), x_scale, y_scale)
 
 			# convert it to SVG paths
 			file.write(f'\t<g class="{shape_type}">\n')
@@ -513,6 +513,14 @@ def purge_small_polygons(paths, x_scale, y_scale):
 		if size < 1:
 			paths.pop(i)
 	return paths
+
+
+def any_in_bounds(points, bbox):
+	for point in points:
+		if bbox.south <= point["lat"] <= bbox.north:
+			if bbox.west <= point["lon"] <= bbox.east:
+				return True
+	return False
 
 
 class BoundingBox:
