@@ -164,11 +164,11 @@ def choose_queries(border_detail, street_detail, railroads, tramways, walkways, 
 	if street_detail == "auto":
 		if abs(y_scale) > 1200:
 			num_street_layers = 6  # all streets
-		elif abs(y_scale) > 600:
+		elif abs(y_scale) > 500:
 			num_street_layers = 5  # all but residential streets
-		elif abs(y_scale) > 300:
+		elif abs(y_scale) > 250:
 			num_street_layers = 4  # primary and secondary streets
-		elif abs(y_scale) > 150:
+		elif abs(y_scale) > 120:
 			num_street_layers = 3  # primary streets
 		elif abs(y_scale) > 50:
 			num_street_layers = 2  # only highways
