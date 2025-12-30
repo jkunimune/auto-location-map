@@ -39,7 +39,7 @@ You can control the amount of detail in the map with command-line arguments.
 
 To increase or decrease the number of streets, use `--street-detail`.  This is a flag between 0 and 6; lower numbers only show major streets and higher numbers include smaller streets.  If you run the script without specifying it, it will tell you what number it picked.
 
-You can also force or suppress the inclusion of railroads by passing `--railroads=yes` or `--railroads=no`, respectively.  Similarly, you can show or hide green space by passing `--parks=yes` or `--parks=no`.  For example, if for some reason you want a railroad map of downtown Manhattan you can do this:
+You can also force or suppress the inclusion of railroads by passing `--railroads=yes` or `--railroads=no`, respectively.  Similarly, you can show or hide tramways by passing `--tramways=yes` or `--tramways=no`, bikeways by passing `--bikeways=yes` or `--bikeways=no`, and green space by passing `--parks=yes` or `--parks=no`.  For example, if for some reason you want a railroad map of downtown Manhattan you can do this:
 ```bash
 python auto_location_map.py --street-detail=0 --railroads=yes --parks=no 'Location map Lower Manhattan.png'
 ```
