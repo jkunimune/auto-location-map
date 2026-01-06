@@ -13,7 +13,7 @@ STYLES = {
 	"background": "fill: #ffffff; stroke: none",
 	"sea": "fill: #b1deff; fill-rule: evenodd; stroke: none",
 	"lake": "fill: #b1deff; fill-rule: evenodd; stroke: none",
-	"green": "fill: #cdf8d5; fill-rule: evenodd; stroke: none",
+	"green": "fill: #d5f6ce; fill-rule: evenodd; stroke: none",
 	"airport": "fill: #f3e7f2; fill-rule: evenodd; stroke: none",
 	"airstrip": "fill: none; stroke: #d6c9d4; stroke-width: «2»; stroke-linejoin: round; stroke-linecap: butt",
 	"minor_street": "fill: none; stroke: #cbc3b6; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
