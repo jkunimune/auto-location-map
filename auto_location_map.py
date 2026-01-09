@@ -4,6 +4,7 @@ from math import inf, pi, sqrt, cos, radians, atan2, hypot
 from os import makedirs, path
 import re
 from time import time, sleep, strftime
+from sys import stderr
 from typing import Dict, List
 
 import requests
@@ -56,17 +57,20 @@ def main():
 		help="The level of detail at which to show political borders: 0 for none, 2 for national, 4 for provincial, and so on")
 	args = parser.parse_args()
 
-	bbox, new_filename = choose_bounds(args.area_specifier)
+	try:
+		bbox, new_filename = choose_bounds(args.area_specifier)
 
-	x_scale, y_scale = choose_scale(bbox)
+		x_scale, y_scale = choose_scale(bbox)
 
-	shape_types = choose_queries(
-		args.border_detail, args.street_detail,
-		args.railroads, args.tramways, args.walkways, args.parks, y_scale)
+		shape_types = choose_queries(
+			args.border_detail, args.street_detail,
+			args.railroads, args.tramways, args.walkways, args.parks, y_scale)
 
-	data = load_data(bbox, shape_types)
+		data = load_data(bbox, shape_types)
 
-	write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data)
+		write_SVG(new_filename, bbox, x_scale, y_scale, shape_types, data)
+	except Exception as e:
+		print(e, file=stderr)
 
 
 def choose_bounds(area_specifier):
