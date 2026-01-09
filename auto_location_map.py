@@ -266,7 +266,7 @@ def choose_queries(border_detail, street_detail, railroads, tramways, walkways, 
 
 def load_data(bbox, shape_types):
 	# load relevant data for the relevant region from OpenStreetMap's Overpass API
-	full_query = f"[out:json][bbox:{bbox.south},{bbox.west},{bbox.north},{bbox.east}]; ( "
+	full_query = f"[out:json][timeout:180][bbox:{bbox.south},{bbox.west},{bbox.north},{bbox.east}]; ( "
 	for query_set in shape_types.values():
 		for kind, key, values in query_set:
 			full_query += f'{kind}["{key}"~"{values}"]; '
