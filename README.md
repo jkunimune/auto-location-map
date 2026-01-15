@@ -48,3 +48,9 @@ Finally, you can show political borders by using `--border-detail`.  This is an 
 ```bash
 python auto_location_map.py --border-detail=7 'Location map Lower Manhattan.png'
 ```
+
+# Known issues
+
+Sometimes when a large polygon made of multiple ways is partially off the map, it gets fragmented, causing two or more long straight edges to stretch across it.  I don't know why it does that.  You can usually fix it in a text editor or in a vector graphics editor, tho.
+
+Sometimes complicated coastlines will get fragmented in a similar way and fail to produce a contiguous ocean.  I _do_ know why it does that one (it's because I don't trim my coastline segments to the edge of the map) but it's rare enough that I don't care.
