@@ -21,7 +21,7 @@ STYLES = {
 	"major_street": "fill: none; stroke: #cbc3b6; stroke-width: «1»; stroke-linejoin: round; stroke-linecap: round",
 	"minor_highway": "fill: none; stroke: #dcb46e; stroke-width: «2»; stroke-linejoin: round; stroke-linecap: round",
 	"major_highway": "fill: none; stroke: #dcb46e; stroke-width: «3»; stroke-linejoin: round; stroke-linecap: round",
-	"railroad": "fill: none; stroke: #ea998b; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
+	"railroad": "fill: none; stroke: #f7806e; stroke-width: «0»; stroke-linejoin: round; stroke-linecap: round",
 	"border": "fill: none; stroke: #a8a8a8; stroke-width: 0.56; stroke-linejoin: round; stroke-linecap: square; stroke-dasharray: 0.01 1.12 0.56 1.12",
 }
 
