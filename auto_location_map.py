@@ -251,7 +251,7 @@ def choose_queries(border_detail, street_detail, railroads, tramways, walkways, 
 		]
 	if show_railroads:
 		shape_types["railroad"] = [
-			("way", "railway", r"^rail$"),
+			("way[service!~'(crossover|siding|spur|yard)']", "railway", r"^rail$"),
 		]
 	if show_parks:
 		shape_types["green"] = [
